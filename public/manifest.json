@@ -1,0 +1,17 @@
+{
+  "name": "Vast Knowledge — On-chain Alpha Radar",
+  "short_name": "Vast Knowledge",
+  "description": "Spot trending tokens and narratives before the crowd.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0b0f",
+  "theme_color": "#0a0b0f",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
