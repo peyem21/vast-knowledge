@@ -29,6 +29,24 @@ export interface TokenRow {
   narratives: string[];
 }
 
+export interface TokenLink {
+  label: string;
+  url: string;
+}
+
+/** Richer view of a single token for the detail page. */
+export interface TokenDetail extends TokenRow {
+  priceChange5m: number | null;
+  volume6h: number | null;
+  volume1h: number | null;
+  buys24h: number | null;
+  sells24h: number | null;
+  dexId: string | null;
+  quoteSymbol: string | null;
+  websites: TokenLink[];
+  socials: TokenLink[];
+}
+
 export interface NarrativeSummary {
   narrative: string;
   tokenCount: number;

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { TokenRow } from "@/lib/types";
 import { ageFromMs, compactUsd, isFresh, pct, price } from "@/lib/format";
 
@@ -67,10 +68,8 @@ export default function TokenTable({
                   </button>
                 </Td>
                 <Td>
-                  <a
-                    href={t.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    href={`/token/${t.chainId}/${t.address}`}
                     className="flex items-center gap-2 hover:underline"
                   >
                     {t.imageUrl ? (
@@ -96,7 +95,7 @@ export default function TokenTable({
                         🚀{t.boosts}
                       </span>
                     )}
-                  </a>
+                  </Link>
                 </Td>
                 <Td className="text-right tabular-nums">{price(t.priceUsd)}</Td>
                 <Td className={`text-right tabular-nums ${changeColor(t.priceChange1h)}`}>

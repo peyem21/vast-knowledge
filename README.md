@@ -76,6 +76,7 @@ app/
   page.tsx              # landing → renders the dashboard
   layout.tsx            # metadata, PWA manifest, viewport
   api/tokens/route.ts   # server proxy: trending tokens + narrative summary
+  token/[chain]/[address]/page.tsx  # token detail: live chart, stats, socials
 components/
   Dashboard.tsx         # state, chain switcher, auto-refresh
   TokenTable.tsx        # the screener table
@@ -94,7 +95,7 @@ lib/
 
 - [ ] Price/volume alerts with PWA push notifications
 - [ ] Smart-money / whale wallet tracking (needs a paid API)
-- [ ] Token detail page with embedded chart and recent trades
+- [x] Token detail page with embedded chart and recent trades
 - [ ] Holder growth & distribution metrics
 - [ ] LLM-based narrative classification (replace keyword tagging)
 - [ ] Wallet connect for a personalized "my bags vs. the market" view

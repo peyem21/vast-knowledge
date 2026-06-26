@@ -1,4 +1,4 @@
-import { TokenRow } from "./types";
+import { TokenDetail, TokenLink, TokenRow } from "./types";
 import { tagNarratives } from "./narratives";
 
 const BASE = "https://api.dexscreener.com";
@@ -17,17 +17,24 @@ interface Boost {
 /** Raw shape of a DexScreener pair (trimmed to fields we use). */
 interface Pair {
   chainId: string;
+  dexId?: string;
   url: string;
   pairAddress: string;
   baseToken: { address: string; name: string; symbol: string };
+  quoteToken?: { symbol?: string };
   priceUsd?: string;
-  priceChange?: { h1?: number; h6?: number; h24?: number };
-  volume?: { h24?: number };
+  priceChange?: { m5?: number; h1?: number; h6?: number; h24?: number };
+  volume?: { h1?: number; h6?: number; h24?: number };
+  txns?: { h24?: { buys?: number; sells?: number } };
   liquidity?: { usd?: number };
   fdv?: number;
   marketCap?: number;
   pairCreatedAt?: number;
-  info?: { imageUrl?: string };
+  info?: {
+    imageUrl?: string;
+    websites?: { label?: string; url: string }[];
+    socials?: { type?: string; url: string }[];
+  };
 }
 
 async function getJson<T>(path: string): Promise<T> {
@@ -144,4 +151,42 @@ export async function fetchTrendingTokens(chain: string): Promise<TokenRow[]> {
   // Default ranking: 24h volume desc (the clearest "something's happening" signal).
   rows.sort((a, b) => (b.volume24h ?? 0) - (a.volume24h ?? 0));
   return rows;
+}
+
+function toLinks(items: { label?: string; type?: string; url: string }[] | undefined): TokenLink[] {
+  return (items ?? [])
+    .filter((i) => i.url)
+    .map((i) => ({ label: i.label ?? i.type ?? "link", url: i.url }));
+}
+
+/**
+ * Fetches the full detail for a single token (most liquid pair + socials,
+ * trade counts, and short-timeframe momentum) for the token detail page.
+ * Returns null if the token can't be found on the given chain.
+ */
+export async function fetchTokenDetail(
+  chain: string,
+  address: string
+): Promise<TokenDetail | null> {
+  const data = await getJson<{ pairs: Pair[] | null }>(
+    `/latest/dex/tokens/${address}`
+  ).catch(() => ({ pairs: [] as Pair[] }));
+
+  const pairs = (data.pairs ?? []).filter((p) => p.chainId === chain);
+  const pair = bestPair(pairs);
+  if (!pair) return null;
+
+  const base = toRow(pair);
+  return {
+    ...base,
+    priceChange5m: num(pair.priceChange?.m5),
+    volume6h: num(pair.volume?.h6),
+    volume1h: num(pair.volume?.h1),
+    buys24h: num(pair.txns?.h24?.buys),
+    sells24h: num(pair.txns?.h24?.sells),
+    dexId: pair.dexId ?? null,
+    quoteSymbol: pair.quoteToken?.symbol ?? null,
+    websites: toLinks(pair.info?.websites),
+    socials: toLinks(pair.info?.socials),
+  };
 }
