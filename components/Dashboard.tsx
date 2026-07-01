@@ -1,11 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NarrativeSummary, TokenRow } from "@/lib/types";
 import { getWatchlist, toggleWatch } from "@/lib/watchlist";
+import {
+  AlertEvent,
+  AlertRule,
+  addRule,
+  evaluateAlerts,
+  fireNotification,
+  getRules,
+  removeRule,
+  toggleRule,
+} from "@/lib/alerts";
+import { allNarratives } from "@/lib/narratives";
 import NarrativeStrip from "./NarrativeStrip";
 import TokenTable from "./TokenTable";
 import Filters, { FilterState, SortKey } from "./Filters";
+import AlertsPanel from "./AlertsPanel";
 
 const CHAINS = [
   { id: "solana", label: "Solana" },
@@ -41,10 +53,21 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [rules, setRules] = useState<AlertRule[]>([]);
+  const [alertEvents, setAlertEvents] = useState<AlertEvent[]>([]);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+  const [seenCount, setSeenCount] = useState(0);
 
   useEffect(() => {
     setWatchlist(getWatchlist());
+    setRules(getRules());
   }, []);
+
+  // Latest watchlist/rules for use inside the fetch loop without re-subscribing.
+  const watchlistRef = useRef(watchlist);
+  const rulesRef = useRef(rules);
+  watchlistRef.current = watchlist;
+  rulesRef.current = rules;
 
   const load = useCallback(async () => {
     try {
@@ -53,6 +76,17 @@ export default function Dashboard() {
       if (json.error) throw new Error(json.error);
       setData(json);
       setError(null);
+
+      // Evaluate alert rules against the fresh data.
+      const fired = evaluateAlerts(
+        json.tokens,
+        rulesRef.current,
+        watchlistRef.current
+      );
+      if (fired.length) {
+        fired.forEach(fireNotification);
+        setAlertEvents((prev) => [...fired, ...prev].slice(0, 50));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -70,6 +104,20 @@ export default function Dashboard() {
   const onToggleWatch = useCallback((address: string) => {
     setWatchlist(toggleWatch(address));
   }, []);
+
+  const openAlerts = useCallback(() => {
+    setAlertsOpen(true);
+    setSeenCount(alertEvents.length);
+  }, [alertEvents.length]);
+
+  const unseen = Math.max(0, alertEvents.length - seenCount);
+
+  // Narratives available for the alert scope selector (seen + all known).
+  const narrativeOptions = useMemo(() => {
+    const set = new Set<string>(allNarratives());
+    (data?.narratives ?? []).forEach((n) => set.add(n.narrative));
+    return [...set].sort();
+  }, [data]);
 
   const visibleTokens = useMemo(() => {
     if (!data) return [];
@@ -107,14 +155,27 @@ export default function Dashboard() {
             </button>
           ))}
         </div>
-        <div className="text-xs text-[#9aa0ad]">
-          {loading
-            ? "Loading…"
-            : data
-              ? `${data.tokens.length} tokens · updated ${new Date(
-                  data.generatedAt
-                ).toLocaleTimeString()}`
-              : ""}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[#9aa0ad]">
+            {loading
+              ? "Loading…"
+              : data
+                ? `${data.tokens.length} tokens · updated ${new Date(
+                    data.generatedAt
+                  ).toLocaleTimeString()}`
+                : ""}
+          </span>
+          <button
+            onClick={openAlerts}
+            className="relative rounded-lg border border-border bg-panel px-3 py-1.5 text-sm text-[#9aa0ad] hover:text-white"
+          >
+            🔔 Alerts
+            {unseen > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-down px-1 text-[10px] font-semibold text-white">
+                {unseen}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -143,6 +204,17 @@ export default function Dashboard() {
         watchlist={watchlist}
         onToggleWatch={onToggleWatch}
         loading={loading && !data}
+      />
+
+      <AlertsPanel
+        open={alertsOpen}
+        onClose={() => setAlertsOpen(false)}
+        rules={rules}
+        events={alertEvents}
+        narratives={narrativeOptions}
+        onAddRule={(r) => setRules(addRule(r))}
+        onToggleRule={(id) => setRules(toggleRule(id))}
+        onRemoveRule={(id) => setRules(removeRule(id))}
       />
     </div>
   );

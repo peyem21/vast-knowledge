@@ -16,6 +16,10 @@ research on desktop and glance on mobile.
   "heating narratives" strip so you can see which *theme* is pumping, not just
   individual coins. Click a narrative to filter the table.
 - **Watchlist** — star tokens to track (stored locally in your browser).
+- **Alerts** — set rules (price change 1h/24h, volume surge, new launch) scoped
+  to your watchlist, a narrative, or any token. Rules are evaluated in the
+  browser on every refresh and fire a **native notification** plus an in-app
+  feed. No backend required.
 - **Filters** — search, min-liquidity tiers, "fresh launches only", sort by
   volume / price change / liquidity / market cap / newest.
 - **Multi-chain ready** — Solana (default), Ethereum, Base, BSC, Arbitrum.
@@ -82,18 +86,22 @@ components/
   TokenTable.tsx        # the screener table
   NarrativeStrip.tsx    # narrative heat cards
   Filters.tsx           # search / sort / liquidity / fresh / watchlist
+components/
+  AlertsPanel.tsx       # alert rule builder + trigger feed (drawer)
 lib/
   dexscreener.ts        # DexScreener client + token normalization
   narratives.ts         # keyword-based narrative tagging
   narrativeSummary.ts   # per-narrative aggregation
   watchlist.ts          # localStorage watchlist
+  alerts.ts             # alert rules, evaluation, browser notifications
   format.ts             # number/price/age formatting
   types.ts              # shared types
 ```
 
 ## Roadmap ideas
 
-- [ ] Price/volume alerts with PWA push notifications
+- [x] Price/volume alerts with browser notifications (client-side)
+- [ ] Server-side alert evaluation + web-push (fire when no tab is open)
 - [ ] Smart-money / whale wallet tracking (needs a paid API)
 - [x] Token detail page with embedded chart and recent trades
 - [ ] Holder growth & distribution metrics
