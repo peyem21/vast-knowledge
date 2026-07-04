@@ -23,6 +23,11 @@ research on desktop and glance on mobile.
   which tokens they're buying, **ranked by how many distinct wallets are piling
   into the same token** (the real conviction signal), with net USD flow. Wallet
   list is local to your browser; the feed is aggregated server-side.
+- **Discover smart wallets** — no wallet list yet? Click **Discover** on
+  `/wallets`: it samples today's biggest 24h gainers, pulls each one's top
+  holders, and surfaces wallets that appear as a top holder in **2 or more**
+  of them — a much stronger signal than any single token's holder list. One
+  click adds a candidate to your tracked list.
 - **Watchlist** — star tokens to track (stored locally in your browser).
 - **Alerts** — set rules (price change 1h/24h, volume surge, new launch) scoped
   to your watchlist, a narrative, or any token. Rules are evaluated in the
@@ -124,6 +129,7 @@ app/
   api/cron/evaluate/    # scheduled: evaluate rules + send web-push
   api/smart-money/      # top holders + whale trades (via provider)
   api/smart-money/feed/ # aggregate tracked-wallet activity by token
+  api/smart-money/discover/  # find wallets holding multiple recent gainers
   token/[chain]/[address]/page.tsx  # token detail: live chart, stats, socials
   wallets/page.tsx      # Smart Money Feed: manage wallets + who's-buying-what
 components/
@@ -154,7 +160,7 @@ public/
 - [ ] Production push store (Vercel KV / Postgres) + user accounts
 - [x] Smart-money / whale tracking on token page (Birdeye: holders + trades)
 - [x] Track smart-money wallets → aggregated "who's buying what" feed
-- [ ] Auto-discover smart wallets (top holders of past winners) instead of manual
+- [x] Auto-discover smart wallets (cross-reference top holders of today's gainers)
 - [x] Token detail page with embedded chart and recent trades
 - [ ] Holder growth & distribution metrics
 - [ ] LLM-based narrative classification (replace keyword tagging)
