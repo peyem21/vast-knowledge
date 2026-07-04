@@ -27,6 +27,7 @@ export default function AlertsPanel({
   onAddRule,
   onToggleRule,
   onRemoveRule,
+  push,
 }: {
   open: boolean;
   onClose: () => void;
@@ -36,6 +37,13 @@ export default function AlertsPanel({
   onAddRule: (rule: Omit<AlertRule, "id" | "createdAt" | "enabled">) => void;
   onToggleRule: (id: string) => void;
   onRemoveRule: (id: string) => void;
+  push: {
+    supported: boolean;
+    configured: boolean;
+    enabled: boolean;
+    busy: boolean;
+    onToggle: () => void;
+  };
 }) {
   const [scopeType, setScopeType] = useState<AlertScopeType>("watchlist");
   const [narrative, setNarrative] = useState(narratives[0] ?? "");
@@ -118,6 +126,40 @@ export default function AlertsPanel({
               )}
             </div>
           )}
+
+          {/* Background push */}
+          <div className="mb-4 rounded-xl border border-border bg-panel p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium">Background push</div>
+                <div className="text-xs text-[#9aa0ad]">
+                  Fire alerts even when the app is closed.
+                </div>
+              </div>
+              {!push.supported ? (
+                <span className="text-xs text-[#666c7a]">Unsupported</span>
+              ) : !push.configured ? (
+                <span className="text-xs text-[#666c7a]">Not configured</span>
+              ) : (
+                <button
+                  onClick={push.onToggle}
+                  disabled={push.busy}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+                    push.enabled
+                      ? "border border-border bg-bg text-[#9aa0ad] hover:text-white"
+                      : "bg-accent text-white hover:bg-accent/90"
+                  }`}
+                >
+                  {push.busy ? "…" : push.enabled ? "Turn off" : "Turn on"}
+                </button>
+              )}
+            </div>
+            {push.enabled && (
+              <div className="mt-2 flex items-center gap-1.5 text-xs text-up">
+                <span className="h-1.5 w-1.5 rounded-full bg-up" /> Active — syncing rules to server
+              </div>
+            )}
+          </div>
 
           {/* Rule builder */}
           <div className="mb-5 rounded-xl border border-border bg-panel p-3">

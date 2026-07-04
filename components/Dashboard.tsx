@@ -14,6 +14,14 @@ import {
   toggleRule,
 } from "@/lib/alerts";
 import { allNarratives } from "@/lib/narratives";
+import {
+  disablePush,
+  enablePush,
+  isPushEnabled,
+  pushConfigured,
+  pushSupported,
+  syncPush,
+} from "@/lib/push/client";
 import NarrativeStrip from "./NarrativeStrip";
 import TokenTable from "./TokenTable";
 import Filters, { FilterState, SortKey } from "./Filters";
@@ -57,10 +65,13 @@ export default function Dashboard() {
   const [alertEvents, setAlertEvents] = useState<AlertEvent[]>([]);
   const [alertsOpen, setAlertsOpen] = useState(false);
   const [seenCount, setSeenCount] = useState(0);
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
 
   useEffect(() => {
     setWatchlist(getWatchlist());
     setRules(getRules());
+    setPushOn(isPushEnabled());
   }, []);
 
   // Latest watchlist/rules for use inside the fetch loop without re-subscribing.
@@ -111,6 +122,31 @@ export default function Dashboard() {
   }, [alertEvents.length]);
 
   const unseen = Math.max(0, alertEvents.length - seenCount);
+
+  const togglePush = useCallback(async () => {
+    setPushBusy(true);
+    try {
+      if (pushOn) {
+        await disablePush();
+        setPushOn(false);
+      } else {
+        const ok = await enablePush({
+          rules: rulesRef.current,
+          watchlist: watchlistRef.current,
+          chains: [chain],
+        });
+        setPushOn(ok);
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  }, [pushOn, chain]);
+
+  // Keep the server's copy of rules/watchlist/chain in sync while push is on.
+  useEffect(() => {
+    if (!pushOn) return;
+    syncPush({ rules, watchlist, chains: [chain] });
+  }, [pushOn, rules, watchlist, chain]);
 
   // Narratives available for the alert scope selector (seen + all known).
   const narrativeOptions = useMemo(() => {
@@ -215,6 +251,13 @@ export default function Dashboard() {
         onAddRule={(r) => setRules(addRule(r))}
         onToggleRule={(id) => setRules(toggleRule(id))}
         onRemoveRule={(id) => setRules(removeRule(id))}
+        push={{
+          supported: pushSupported(),
+          configured: pushConfigured(),
+          enabled: pushOn,
+          busy: pushBusy,
+          onToggle: togglePush,
+        }}
       />
     </div>
   );
