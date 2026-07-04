@@ -1,4 +1,4 @@
-import { SmartMoneyProvider } from "./provider";
+import { RawWalletTrade, SmartMoneyProvider } from "./provider";
 import { Holder, SmartMoneyData, WhaleTrade } from "./types";
 
 /**
@@ -100,6 +100,69 @@ export class BirdeyeProvider implements SmartMoneyProvider {
       return { ...empty, error: err instanceof Error ? err.message : "fetch failed" };
     }
   }
+
+  async getWalletActivity(
+    chain: string,
+    wallet: string
+  ): Promise<RawWalletTrade[]> {
+    if (!this.configured()) return [];
+    try {
+      // Birdeye wallet transaction list. Shape varies by tier/chain — parsed
+      // defensively. Chains bucket results under data[chain] or data.items.
+      const data = await this.get(
+        `/v1/wallet/tx_list?wallet=${wallet}&limit=50`,
+        chain
+      );
+      const bucket =
+        (data?.[chain] as unknown) ?? (data?.items as unknown) ?? data ?? [];
+      const items = Array.isArray(bucket)
+        ? (bucket as Record<string, unknown>[])
+        : [];
+      return parseWalletTrades(items, chain);
+    } catch {
+      return [];
+    }
+  }
+}
+
+/**
+ * Best-effort parse of a wallet's transactions into token buys/sells. Wallet
+ * tx payloads are the least standardized Birdeye response, so this is the most
+ * likely place to need field tweaks once tested against a live key. It reads a
+ * `balanceChange`/`tokenTransfers` array and infers side from the sign of the
+ * tracked wallet's amount change.
+ */
+function parseWalletTrades(
+  items: Record<string, unknown>[],
+  chain: string
+): RawWalletTrade[] {
+  const out: RawWalletTrade[] = [];
+  for (const tx of items) {
+    const txHash = pickStr(tx, ["txHash", "tx_hash", "signature"]) ?? "";
+    const unix = pickNum(tx, ["blockTime", "blockUnixTime", "time"]);
+    const timestamp = unix ? unix * 1000 : Date.now();
+    const changes = (tx.balanceChange ?? tx.tokenTransfers ?? []) as unknown;
+    if (!Array.isArray(changes)) continue;
+
+    for (const c of changes as Record<string, unknown>[]) {
+      const tokenAddress = pickStr(c, ["address", "mint", "tokenAddress"]);
+      const symbol = pickStr(c, ["symbol", "tokenSymbol"]) ?? "?";
+      const amount = pickNum(c, ["amount", "uiAmount", "changeAmount"]);
+      const volumeUsd = pickNum(c, ["valueUsd", "amountUsd", "uiAmountUsd"]);
+      if (!tokenAddress || amount == null || volumeUsd == null) continue;
+      if (Math.abs(volumeUsd) < 1) continue;
+      out.push({
+        chainId: chain,
+        tokenAddress,
+        tokenSymbol: symbol,
+        side: amount >= 0 ? "buy" : "sell",
+        volumeUsd: Math.abs(volumeUsd),
+        timestamp,
+        txHash,
+      });
+    }
+  }
+  return out;
 }
 
 function asItems(data: Record<string, unknown> | null): Record<string, unknown>[] {

@@ -19,6 +19,10 @@ research on desktop and glance on mobile.
   concentration (with a ⚠ flag when the top 10 hold >50%), and recent whale
   trades (>$1K, buy/sell). Powered by a pluggable provider (Birdeye); shows a
   setup hint until a key is added.
+- **Smart Money Feed** (`/wallets`) — track a personal list of wallets and see
+  which tokens they're buying, **ranked by how many distinct wallets are piling
+  into the same token** (the real conviction signal), with net USD flow. Wallet
+  list is local to your browser; the feed is aggregated server-side.
 - **Watchlist** — star tokens to track (stored locally in your browser).
 - **Alerts** — set rules (price change 1h/24h, volume surge, new launch) scoped
   to your watchlist, a narrative, or any token. Rules are evaluated in the
@@ -119,7 +123,9 @@ app/
   api/push/unsubscribe/ # remove a device's subscription
   api/cron/evaluate/    # scheduled: evaluate rules + send web-push
   api/smart-money/      # top holders + whale trades (via provider)
+  api/smart-money/feed/ # aggregate tracked-wallet activity by token
   token/[chain]/[address]/page.tsx  # token detail: live chart, stats, socials
+  wallets/page.tsx      # Smart Money Feed: manage wallets + who's-buying-what
 components/
   Dashboard.tsx         # state, chain switcher, auto-refresh, push wiring
   TokenTable.tsx        # the screener table
@@ -134,7 +140,7 @@ lib/
   alertRules.ts         # pure alert model + evaluation (shared client/server)
   alerts.ts             # client: rule storage + browser notifications
   push/                 # server push: store, web-push, evaluate, client helpers
-  smartmoney/           # whale/holder provider interface + Birdeye impl
+  smartmoney/           # provider interface + Birdeye; feed aggregation; wallets
   format.ts             # number/price/age formatting
   types.ts              # shared types
 public/
@@ -147,7 +153,8 @@ public/
 - [x] Server-side alert evaluation + web-push (fire when no tab is open)
 - [ ] Production push store (Vercel KV / Postgres) + user accounts
 - [x] Smart-money / whale tracking on token page (Birdeye: holders + trades)
-- [ ] Track specific smart-money wallets across all tokens (needs Helius/Nansen)
+- [x] Track smart-money wallets → aggregated "who's buying what" feed
+- [ ] Auto-discover smart wallets (top holders of past winners) instead of manual
 - [x] Token detail page with embedded chart and recent trades
 - [ ] Holder growth & distribution metrics
 - [ ] LLM-based narrative classification (replace keyword tagging)
