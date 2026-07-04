@@ -15,6 +15,10 @@ research on desktop and glance on mobile.
   Memes, Dogs/Cats, RWA, DeFi, Gaming, Politics, …) and aggregated into a
   "heating narratives" strip so you can see which *theme* is pumping, not just
   individual coins. Click a narrative to filter the table.
+- **Smart money / whale tracking** — on each token's page: top holders, supply
+  concentration (with a ⚠ flag when the top 10 hold >50%), and recent whale
+  trades (>$1K, buy/sell). Powered by a pluggable provider (Birdeye); shows a
+  setup hint until a key is added.
 - **Watchlist** — star tokens to track (stored locally in your browser).
 - **Alerts** — set rules (price change 1h/24h, volume surge, new launch) scoped
   to your watchlist, a narrative, or any token. Rules are evaluated in the
@@ -49,9 +53,11 @@ caching, and rate-limit handling without exposing anything to the browser.
 > the screener will render but show no tokens (it fails gracefully to an empty
 > state rather than erroring).
 
-**Upgrade path:** drop in a paid alpha API (Birdeye, Helius, Moralis) for
-holder counts, smart-money flows, and richer trending signals. The data layer
-in `lib/dexscreener.ts` is isolated to make this a localized change.
+**Smart money (optional):** the token detail page also pulls **top holders,
+supply concentration, and whale trades** from **Birdeye** when a
+`BIRDEYE_API_KEY` is set. It's behind a provider interface
+(`lib/smartmoney/provider.ts`) so you can swap in Helius/Nansen/etc. Without a
+key the panel shows a setup hint — nothing breaks.
 
 ## Tech stack
 
@@ -112,6 +118,7 @@ app/
   api/push/subscribe/   # register a device's push subscription + rules
   api/push/unsubscribe/ # remove a device's subscription
   api/cron/evaluate/    # scheduled: evaluate rules + send web-push
+  api/smart-money/      # top holders + whale trades (via provider)
   token/[chain]/[address]/page.tsx  # token detail: live chart, stats, socials
 components/
   Dashboard.tsx         # state, chain switcher, auto-refresh, push wiring
@@ -127,6 +134,7 @@ lib/
   alertRules.ts         # pure alert model + evaluation (shared client/server)
   alerts.ts             # client: rule storage + browser notifications
   push/                 # server push: store, web-push, evaluate, client helpers
+  smartmoney/           # whale/holder provider interface + Birdeye impl
   format.ts             # number/price/age formatting
   types.ts              # shared types
 public/
@@ -138,7 +146,8 @@ public/
 - [x] Price/volume alerts with browser notifications (client-side)
 - [x] Server-side alert evaluation + web-push (fire when no tab is open)
 - [ ] Production push store (Vercel KV / Postgres) + user accounts
-- [ ] Smart-money / whale wallet tracking (needs a paid API)
+- [x] Smart-money / whale tracking on token page (Birdeye: holders + trades)
+- [ ] Track specific smart-money wallets across all tokens (needs Helius/Nansen)
 - [x] Token detail page with embedded chart and recent trades
 - [ ] Holder growth & distribution metrics
 - [ ] LLM-based narrative classification (replace keyword tagging)

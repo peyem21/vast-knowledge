@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { fetchTokenDetail } from "@/lib/dexscreener";
 import { ageFromMs, compactUsd, isFresh, pct, price } from "@/lib/format";
+import SmartMoney from "@/components/SmartMoney";
 
 export const revalidate = 30;
 
@@ -74,17 +75,21 @@ export default async function TokenPage({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
-        {/* Live chart */}
-        <div className="overflow-hidden rounded-xl border border-border bg-panel">
-          <div className="relative aspect-[16/10] w-full">
-            <iframe
-              src={embed}
-              title={`${detail.symbol} chart`}
-              className="absolute inset-0 h-full w-full"
-              style={{ border: 0 }}
-              loading="lazy"
-            />
+        {/* Live chart + smart money */}
+        <div className="flex flex-col gap-4">
+          <div className="overflow-hidden rounded-xl border border-border bg-panel">
+            <div className="relative aspect-[16/10] w-full">
+              <iframe
+                src={embed}
+                title={`${detail.symbol} chart`}
+                className="absolute inset-0 h-full w-full"
+                style={{ border: 0 }}
+                loading="lazy"
+              />
+            </div>
           </div>
+
+          <SmartMoney chain={detail.chainId} address={detail.address} />
         </div>
 
         {/* Stats sidebar */}
